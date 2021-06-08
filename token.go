@@ -225,6 +225,8 @@ var keywords = map[string]int{
 	"less":                LESS,
 	"like":                LIKE,
 	"limit":               LIMIT,
+	"sample":              SAMPLE,
+	"format":              FORMAT,
 	"linear":              UNUSED,
 	"lines":               UNUSED,
 	"linestring":          LINESTRING,

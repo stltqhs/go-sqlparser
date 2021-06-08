@@ -84,6 +84,8 @@ func forceEOF(yylex interface{}) {
   orderBy       OrderBy
   order         *Order
   limit         *Limit
+  sample        *Sample
+  format        *FormatType
   updateExprs   UpdateExprs
   setExprs      SetExprs
   updateExpr    *UpdateExpr
@@ -113,7 +115,7 @@ func forceEOF(yylex interface{}) {
 
 %token LEX_ERROR
 %left <bytes> UNION
-%token <bytes> SELECT STREAM INSERT UPDATE DELETE FROM WHERE GROUP HAVING ORDER BY LIMIT OFFSET FOR
+%token <bytes> SELECT STREAM INSERT UPDATE DELETE FROM SAMPLE WHERE GROUP HAVING ORDER BY LIMIT OFFSET FOR FORMAT
 %token <bytes> ALL DISTINCT AS EXISTS ASC DESC INTO DUPLICATE KEY DEFAULT SET LOCK KEYS
 %token <bytes> VALUES LAST_INSERT_ID
 %token <bytes> NEXT VALUE SHARE MODE
@@ -240,6 +242,8 @@ func forceEOF(yylex interface{}) {
 %type <order> order
 %type <str> asc_desc_opt
 %type <limit> limit_opt
+%type <sample> sample_opt
+%type <format> format_opt
 %type <str> lock_opt
 %type <columns> ins_column_list column_list
 %type <partitions> opt_partition_clause partition_list
@@ -328,12 +332,13 @@ command:
 | other_statement
 
 select_statement:
-  base_select order_by_opt limit_opt lock_opt
+  base_select order_by_opt limit_opt lock_opt format_opt
   {
     sel := $1.(*Select)
     sel.OrderBy = $2
     sel.Limit = $3
     sel.Lock = $4
+    sel.FormatType = $5
     $$ = sel
   }
 | union_lhs union_op union_rhs order_by_opt limit_opt lock_opt
@@ -353,9 +358,9 @@ stream_statement:
 
 // base_select is an unparenthesized SELECT with no order by clause or beyond.
 base_select:
-  SELECT comment_opt cache_opt distinct_opt straight_join_opt select_expression_list from_opt where_expression_opt group_by_opt having_opt
+  SELECT comment_opt cache_opt distinct_opt straight_join_opt select_expression_list from_opt sample_opt where_expression_opt group_by_opt having_opt
   {
-    $$ = &Select{Comments: Comments($2), Cache: $3, Distinct: $4, Hints: $5, SelectExprs: $6, From: $7, Where: NewWhere(WhereStr, $8), GroupBy: GroupBy($9), Having: NewWhere(HavingStr, $10)}
+    $$ = &Select{Comments: Comments($2), Cache: $3, Distinct: $4, Hints: $5, SelectExprs: $6, From: $7, Sample: $8, Where: NewWhere(WhereStr, $9), GroupBy: GroupBy($10), Having: NewWhere(HavingStr, $11)}
   }
 
 union_lhs:
@@ -2525,6 +2530,24 @@ limit_opt:
     $$ = &Limit{Offset: $4, Rowcount: $2}
   }
 
+sample_opt:
+  {
+    $$ = nil
+  }
+| SAMPLE expression
+  {
+    $$ = &Sample{Value: $2}
+  }
+
+format_opt:
+  {
+    $$ = nil
+  }
+| FORMAT expression
+  {
+    $$ = &FormatType{Value: $2}
+  }
+
 lock_opt:
   {
     $$ = ""
@@ -2856,6 +2879,8 @@ reserved_keyword:
 | LEFT
 | LIKE
 | LIMIT
+| SAMPLE
+| FORMAT
 | LOCALTIME
 | LOCALTIMESTAMP
 | LOCK

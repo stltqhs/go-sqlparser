@@ -254,11 +254,13 @@ type Select struct {
 	Hints       string
 	SelectExprs SelectExprs
 	From        TableExprs
+	Sample      *Sample
 	Where       *Where
 	GroupBy     GroupBy
 	Having      *Where
 	OrderBy     OrderBy
 	Limit       *Limit
+	FormatType  *FormatType
 	Lock        string
 }
 
@@ -1859,6 +1861,38 @@ func (node *Where) walkSubtree(visit Visit) error {
 	)
 }
 
+// Sample represents a Sample clause.
+type Sample struct {
+	Value Expr
+}
+
+// NewSample creates a Sample clause out
+// of a Expr. If the expression is nil, it returns nil.
+func NewSample(expr Expr) *Sample {
+	if expr == nil {
+		return nil
+	}
+	return &Sample{Value: expr}
+}
+
+// Format formats the node.
+func (node *Sample) Format(buf *TrackedBuffer) {
+	if node == nil {
+		return
+	}
+	buf.Myprintf(" sample %v", node.Value)
+}
+
+func (node *Sample) walkSubtree(visit Visit) error {
+	if node == nil {
+		return nil
+	}
+	return Walk(
+		visit,
+		node.Value,
+	)
+}
+
 // Expr represents an expression.
 type Expr interface {
 	iExpr()
@@ -3080,6 +3114,29 @@ func (node *Limit) walkSubtree(visit Visit) error {
 		visit,
 		node.Offset,
 		node.Rowcount,
+	)
+}
+
+// Format represents a Format clause.
+type FormatType struct {
+	Value Expr
+}
+
+// Format formats the node.
+func (node *FormatType) Format(buf *TrackedBuffer) {
+	if node == nil {
+		return
+	}
+	buf.Myprintf(" format %v", node.Value)
+}
+
+func (node *FormatType) walkSubtree(visit Visit) error {
+	if node == nil {
+		return nil
+	}
+	return Walk(
+		visit,
+		node.Value,
 	)
 }
 

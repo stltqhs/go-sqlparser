@@ -2055,3 +2055,16 @@ func BenchmarkParse3(b *testing.B) {
 		}
 	}
 }
+
+func TestSample(t *testing.T) {
+	var sql = "SELECT  (intDiv(toUInt32(time), 3600) * 3600) * 1000 as t, concat(dictGetString('appkey', 'dict_value', tuple(appkey)), ' 请求成功率') as platform, count(if(status IN (0), transactionId, NULL)) / count(transactionId) AS \"请求成功率\" FROM lz_apm_distributed.EVENT_NET_CHANNELTYPE_HTTP_SAMPLE SAMPLE 0.1 WHERE time >= toDateTime(1621664051) AND time > toDateTime(1621664051) AND time < toDateTime(1621836853) AND appname in ('tiya') and appid = '11938970' GROUP BY t,platform ORDER BY t FORMAT JSON"
+	tree, err := Parse(sql)
+
+	if err != nil {
+		t.Errorf("input: %s, err: %v", sql, err)
+	}
+
+	var v = tree.(*Select).From
+
+	fmt.Println(v)
+}
