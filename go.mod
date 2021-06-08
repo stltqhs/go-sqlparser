@@ -1,4 +1,4 @@
-module github.com/ikaiguang/go-sqlparser
+module github.com/stltqhs/go-sqlparser
 
 go 1.16
 
